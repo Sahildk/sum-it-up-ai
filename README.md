@@ -28,14 +28,14 @@ This project is divided into two decoupled monolithic layers: a stunning React-b
 
 ## 🧠 How the App Works (Extractive Summarization)
 
-Instead of generating entirely new sentences like ChatGPT (Abstractive Summarization), SumItUp AI uses pure **Extractive Summarization**, parsing original documents to find the sentences that carry the highest statistical meaning.
+Instead of generating entirely new sentences like ChatGPT (Abstractive Summarization), SumItUp AI uses pure **Extractive Summarization**, parsing original documents to find the sentences that carry the highest statistical meaning. Users can toggle between **Word Frequency** and **TF-IDF** methods!
 
-1. **Frontend Interaction**: The user enters a large block of text into the Next.js Chat Interface and clicks send.
+1. **Frontend Interaction**: The user enters a large block of text into the Next.js Chat Interface, selects the NLP method (Word Frequency or TF-IDF), and clicks send.
 2. **Text Sent to API**: Axios sends an HTTP POST request to the local FastAPI python server running on port `8000`.
 3. **Data Tokenization**: NLTK breaks the giant block of text down into individual sentences, and then further breaks those down into individual words.
 4. **Noise Filtering**: Grammatical filler words ("the", "and", "is") and punctuation are stripped out the dataset entirely.
-5. **Frequency Calculation**: The algorithm tracks and counts the most frequent subject-matter words across the entire document. (For example, an article about NASA might mention "Space" 45 times).
-6. **Sentence Scoring**: The algorithm runs through the original sentences and assigns them a "density score" based on how many high-frequency subject words they contain.
+5. **Metric Calculation**: Depending on the approach, the algorithm either counts raw frequencies of subject words (Word Frequency) or evaluates uniqueness using logarithmic penalization on common document words (TF-IDF).
+6. **Sentence Scoring**: The algorithm runs through the original sentences and assigns them a "density score" based on how many high-value subject words they contain.
 7. **Extraction & Restructuring**: The top scoring sentences are extracted, sorted back into their chronological order, and returned as a JSON object to the beautiful frontend!
 
 ---

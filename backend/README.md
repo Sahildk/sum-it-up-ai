@@ -52,16 +52,23 @@ for i, sentence in enumerate(sentences):
 A sentence packed densely with "high-value" subject words (like "James Webb Space Telescope NASA") will earn a massive score, while a filler sentence (like "It is very cool to look at.") will get a very low score.
 
 ## 5. Summary Generation & Final Output
-We sort the sentences by their total score from highest to lowest and extract the top `N` sentences requested.
+Instead of extracting a hardcoded number of sentences, we calculate the **average score** of all sentences in the text to establish a baseline threshold. By multiplying this average by a dynamic `threshold_multiplier` (e.g., `1.2`), we extract only the sentences that genuinely punch above their weight.
 
 ```python
-# Sort from highest score to lowest 
-sorted_sentences = sorted(sentence_scores.items(), key=lambda x: x[1], reverse=True)
-top_sentences = sorted_sentences[:request.sentences_count]
+# Calculate average score for threshold
+total_score = sum(sentence_scores.values())
+average_score = total_score / len(sentence_scores) if len(sentence_scores) > 0 else 0
+threshold = average_score * request.threshold_multiplier
+
+# Pick sentences above the threshold
+top_sentences = [item for item in sentence_scores.items() if item[1] >= threshold]
 
 # Re-order chronologically based on their original index
 top_sentences = sorted(top_sentences, key=lambda x: x[0][0])
 ```
 Because the highest-scoring sentences might have been scattered randomly throughout the text (e.g., sentence 12, then sentence 2, then sentence 50), we perform a final sort based on their **original index (`i`)**. This reorganizes the extracted, high-value sentences so they read logically in the chronological order the original human author intended. 
 
-Finally, we join the sentences together with spaces and return the final `JSON` string sequence to the frontend interface.
+Finally, we join the sentences together with spaces and return a `JSON` response containing:
+- `summary`: The final ordered string of extracted sentences.
+- `original_length` / `summary_length`: The length metrics.
+- `sentence_scores`: A list of dictionaries containing every calculated sentence and its float score, allowing the frontend to transparently display the analytical breakdown to the user.

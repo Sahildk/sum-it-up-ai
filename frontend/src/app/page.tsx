@@ -9,6 +9,8 @@ type Message = {
   id: string;
   role: "user" | "bot";
   text: string;
+  method?: string;
+  scores?: { sentence: string; score: number }[];
 };
 
 export default function ChatSummarizer() {
@@ -21,6 +23,7 @@ export default function ChatSummarizer() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState("word_frequency");
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -42,13 +45,16 @@ export default function ChatSummarizer() {
     try {
       const { data } = await axios.post("http://localhost:8000/summarize", {
         text: userMessage.text,
-        sentences_count: 4, 
+        threshold_multiplier: 1.2, 
+        method: method,
       });
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",
         text: `**Summary (${data.summary_length} sentences):**\n` + data.summary,
+        method: data.method_used,
+        scores: data.sentence_scores,
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
@@ -130,6 +136,11 @@ export default function ChatSummarizer() {
                     <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
                       {message.role === "user" ? "You" : "SumItUp AI"}
                     </span>
+                    {message.method && (
+                      <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded ml-2">
+                        {message.method === "tfidf" ? "TF-IDF" : "Word Frequency"}
+                      </span>
+                    )}
                   </div>
                   
                   <div
@@ -140,6 +151,21 @@ export default function ChatSummarizer() {
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{message.text}</p>
+                    {message.scores && message.scores.length > 0 && (
+                      <div className="mt-4 border-t border-white/10 pt-4 cursor-default">
+                        <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Analysis & Scores</p>
+                        <ul className="flex flex-col gap-2">
+                          {message.scores.map((s, i) => (
+                            <li key={i} className="text-[13px] bg-black/40 p-2 rounded-md border border-white/[0.02]">
+                              <span className="text-emerald-400 font-mono text-xs mr-2 border border-emerald-400/20 bg-emerald-400/10 px-1 py-0.5 rounded">
+                                {s.score.toFixed(4)}
+                              </span>
+                              <span className="text-zinc-400">{s.sentence}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -186,6 +212,24 @@ export default function ChatSummarizer() {
           {/* Subtle Glow Behind Input */}
           <div className="absolute inset-x-8 -inset-y-4 bg-white/[0.02] blur-xl rounded-full" />
           
+          {/* Method Selector */}
+          <div className="flex justify-center mb-3">
+             <div className="flex bg-white/[0.03] border border-white/[0.08] rounded-full p-1 shadow-sm backdrop-blur-md">
+                <button 
+                  onClick={() => setMethod("word_frequency")}
+                  className={`text-[12px] px-3 py-1 rounded-full transition-all ${method === "word_frequency" ? "bg-white text-black font-medium" : "text-zinc-500 hover:text-zinc-300"}`}
+                >
+                  Word Frequency
+                </button>
+                <button 
+                  onClick={() => setMethod("tfidf")}
+                  className={`text-[12px] px-3 py-1 rounded-full transition-all ${method === "tfidf" ? "bg-white text-black font-medium" : "text-zinc-500 hover:text-zinc-300"}`}
+                >
+                  TF-IDF
+                </button>
+             </div>
+          </div>
+          
           <div className="relative bg-[#121212] border border-white/[0.08] shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)] rounded-[28px] flex items-end p-[6px] gap-2 transition-all hover:bg-[#141414]">
             
             <div className="pl-4 pb-[14px] shrink-0 text-zinc-500">
@@ -219,7 +263,7 @@ export default function ChatSummarizer() {
           </div>
           
           <p className="text-center text-[11px] text-zinc-600 mt-4 font-medium tracking-wide w-full">
-            EXTRACTIVE SUMMARIZATION POWERED BY NLTK
+            EXTRACTIVE SUMMARIZATION POWERED BY NLTK · WORD FREQUENCY & TF-IDF
           </p>
         </div>
       </div>
