@@ -45,7 +45,7 @@ export default function ChatSummarizer() {
     try {
       const { data } = await axios.post("http://localhost:8000/summarize", {
         text: userMessage.text,
-        threshold_multiplier: 1.2, 
+        threshold_multiplier: 0.9, 
         method: method,
       });
 
